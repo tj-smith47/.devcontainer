@@ -1,37 +1,64 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091
+# shellcheck disable=SC1091,SC2002,SC2094
 
-sudo apt-get update -qq
-sudo apt-get install -qqy vim ruby-dev curl fuse make
+## ENV's
+ARCH=$(uname -m)
+SH_NAME=$(basename "${SHELL:-/bin/zsh}")
 
-sudo gem install colorls
+## Functions
+install_deps() {
+    sudo apt-get update -qq
+    sudo apt-get install -qqy vim ruby-dev curl fuse make
+    sudo gem install colorls
+}
 
-# Install nvim / clone config
-cd "${HOME}" || exit
-[[ ! -d "${HOME}/.local/bin" ]] && mkdir -p "${HOME}/.local/bin"
-git clone https://github.com/thomaspttn/nvim-docker.git "${HOME}/nvim-docker/"
-INSTALL_DIR="${HOME}" source "${HOME}/nvim-docker/install.sh" https://github.com/tj-smith47/nvim.git
-cd - || exit
+install_omz() {
+    if [ -f "${HOME}/.dotfiles/.zshrc" ] && [ ! -f "${HOME}/.dotfiles/.bashrc" ]; then
+        sudo usermod --shell /usr/bin/zsh "$(whoami)"
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    fi
+}
 
-[[ -f "${HOME}/.dotfiles/.zshrc" && ! -f "${HOME}/.dotfiles/.bashrc" ]] &&
-    (sudo usermod --shell /usr/bin/zsh salesloft &&
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended)
+install_nvim() {
+    # Setup
+    cd "${HOME}" || return
+    [[ ! -d "${HOME}/.local/bin" ]] && mkdir -p "${HOME}/.local/bin"
 
-if [ -f "${HOME}/.dotfiles/.bashrc" ]; then
-    ln -sf "${HOME}/.dotfiles/aliases" "${HOME}/.bash_aliases"
-    ln -sf "${HOME}/.dotfiles/envs" "${HOME}/.bash_envs"
-    ln -sf "${HOME}/.dotfiles/.bashrc" "${HOME}/.bashrc"
-fi
+    # Clone the nvim setup repo
+    git clone https://github.com/thomaspttn/nvim-docker.git "${HOME}/nvim-docker/"
 
-[[ ! -d "${HOME}/.config" ]] && mkdir -p "${HOME}/.config/nvim"
-ln -sf "${HOME}/.dotfiles/colorls" "${HOME}/.config/colorls"
-ln -sf "${HOME}/.dotfiles/kitty" "${HOME}/.config/kitty"
-ln -sf "${HOME}/.dotfiles/dracula-pro.zsh-theme" "${HOME}/.oh-my-zsh/themes/dracula-pro.zsh-theme"
-ln -sf "${HOME}/.dotfiles/.p10k.zsh" "${HOME}/.p10k.zsh"
-ln -sf "${HOME}/.dotfiles/fzf-git.sh" "${HOME}/fzf-git.sh"
+    # Set to container user's home directory instead of root's
+    cat <<<"$(cat "${HOME}/nvim-docker/install.sh" | sed "s|/root|${HOME}|g")" >"${HOME}/nvim-docker/install.sh"
 
-if [ -f "${HOME}/.dotfiles/.zshrc" ]; then
-    ln -sf "${HOME}/.dotfiles/aliases" "${HOME}/.zsh_aliases"
-    ln -sf "${HOME}/.dotfiles/envs" "${HOME}/.zsh_envs"
-    ln -sf "${HOME}/.dotfiles/.zshrc" "${HOME}/.zshrc"
-fi
+    # Update architecture if needed
+    [[ "${ARCH}" != "amd64" && "${ARCH}" != "x86_64" ]] && cat <<<"$(cat "${HOME}/nvim-docker/install.sh" | sed "s|amd64|arm64|g")" >"${HOME}/nvim-docker/install.sh"
+
+    # Install nvim
+    source "${HOME}/nvim-docker/install.sh" https://github.com/tj-smith47/nvim.git
+    cd - || return
+}
+
+link_configs() {
+    if [ "${SH_NAME}" == "zsh" ]; then
+        ln -sf "${HOME}/.dotfiles/dracula-pro.zsh-theme" "${HOME}/.oh-my-zsh/themes/dracula-pro.zsh-theme"
+        ln -sf "${HOME}/.dotfiles/.p10k.zsh" "${HOME}/.p10k.zsh"
+    fi
+    ln -sf "${HOME}/.dotfiles/colorls" "${HOME}/.config/colorls"
+    ln -sf "${HOME}/.dotfiles/kitty" "${HOME}/.config/kitty"
+    ln -sf "${HOME}/.dotfiles/fzf-git.sh" "${HOME}/fzf-git.sh"
+}
+
+setup_shell() {
+    if [ -f "${HOME}/.dotfiles/.${SH_NAME}rc" ]; then
+        ln -sf "${HOME}/.dotfiles/aliases" "${HOME}/.${SH_NAME}_aliases"
+        ln -sf "${HOME}/.dotfiles/envs" "${HOME}/.${SH_NAME}_envs"
+        ln -sf "${HOME}/.dotfiles/.${SH_NAME}rc" "${HOME}/.${SH_NAME}rc"
+    fi
+}
+
+## Main
+install_deps
+install_omz
+install_nvim
+link_configs
+setup_shell
