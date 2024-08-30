@@ -21,6 +21,8 @@ install_nvim() {
     [[ ! -d "${HOME}/.config" ]] && mkdir -p "${HOME}/.config"
     if [ -f "${HOME}/.dotfiles/nvim.sh" ]; then
         source "${HOME}/.dotfiles/nvim.sh" "${NVIM_REPO}"
+    else
+        git clone "${NVIM_REPO}" "${HOME}/.config/nvim"
     fi
 }
 
