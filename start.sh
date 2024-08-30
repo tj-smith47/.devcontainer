@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091,SC2002,SC2094
 
-## ENV's
-ARCH=$(uname -m)
-SH_NAME=$(basename "${SHELL:-/bin/zsh}")
-
 ## Functions
 install_deps() {
     sudo apt-get update -qq
@@ -20,22 +16,10 @@ install_omz() {
 }
 
 install_nvim() {
-    # Setup
-    cd "${HOME}" || return
-    [[ ! -d "${HOME}/.local/bin" ]] && mkdir -p "${HOME}/.local/bin"
-
-    # Clone the nvim setup repo
-    git clone https://github.com/thomaspttn/nvim-docker.git "${HOME}/nvim-docker/"
-
-    # Set to container user's home directory instead of root's
-    cat <<<"$(cat "${HOME}/nvim-docker/install.sh" | sed "s|/root|${HOME}|g")" >"${HOME}/nvim-docker/install.sh"
-
-    # Update architecture if needed
-    [[ "${ARCH}" != "amd64" && "${ARCH}" != "x86_64" ]] && cat <<<"$(cat "${HOME}/nvim-docker/install.sh" | sed "s|amd64|arm64|g")" >"${HOME}/nvim-docker/install.sh"
-
-    # Install nvim
-    source "${HOME}/nvim-docker/install.sh" https://github.com/tj-smith47/nvim.git
-    cd - || return
+    [[ ! -d "${HOME}/.config" ]] && mkdir -p "${HOME}/.config"
+    if [ -f "${HOME}/.dotfiles/nvim.sh" ]; then
+        source "${HOME}/.dotfiles/nvim.sh" "${NVIM_REPO}"
+    fi
 }
 
 link_configs() {
@@ -49,6 +33,7 @@ link_configs() {
 }
 
 setup_shell() {
+    SH_NAME=$(basename "${SHELL:-/bin/zsh}")
     if [ -f "${HOME}/.dotfiles/.${SH_NAME}rc" ]; then
         ln -sf "${HOME}/.dotfiles/aliases" "${HOME}/.${SH_NAME}_aliases"
         ln -sf "${HOME}/.dotfiles/envs" "${HOME}/.${SH_NAME}_envs"
@@ -57,6 +42,7 @@ setup_shell() {
 }
 
 ## Main
+sudo chown -R "$(whoami):$(whoami)" ./
 install_deps
 install_omz
 install_nvim
