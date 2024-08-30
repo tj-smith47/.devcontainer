@@ -6,12 +6,11 @@
 # shellcheck disable=SC1091
 
 ## ENV's
-INSTALL_DIR="${HOME:-/home/salesloft/}"
+INSTALL_DIR="${HOME:-/home/salesloft}/"
 NODE_VERSION="20.14.0"
 NVIM_CONFIG_REPO="$1"
 NVIM_VERSION="v0.10.1"
 NVM_VERSION="v0.39.7"
-RIPGREP_VERSION="13.0.0"
 
 ARCH=$(uname -m)
 if [ "${ARCH}" == "x86_64" ] || [ "${ARCH}" == "amd64" ]; then
@@ -37,7 +36,7 @@ export DISPLAY=":0"
 ## Functions
 setup() {
   sudo apt-get update
-  sudo apt-get install -y clang bear xclip python3-venv
+  sudo apt-get install -y bear clang python3-venv ripgrep xclip
   sudo ln -s -f .clangd ~/.clangd
 }
 
@@ -50,15 +49,9 @@ install_nvm() {
 
 install_nvim() {
   wget "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/${DOWNLOAD_FILE}"
-  tar xzvf "${DOWNLOAD_FILE}"
+  [[ "${ARCH}" != "arm64" ]] && tar -xzvf "${DOWNLOAD_FILE}"
   chmod u+x "${NVIM_FILE}"
   sudo ln -s "${INSTALL_DIR}${NVIM_FILE}" /usr/local/bin/nvim
-}
-
-install_rg() {
-  echo "${GREEN}ARCH:${NC} ${ARCH}"
-  curl -LO https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/ripgrep_${RIPGREP_VERSION}_${ARCH}.deb
-  sudo apt-get install "./ripgrep_${RIPGREP_VERSION}_${ARCH}.deb"
 }
 
 clone_repo() {

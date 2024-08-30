@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091,SC2002,SC2094
 
+SH_NAME=$(basename "${SHELL:-/bin/zsh}")
+
 ## Functions
 install_deps() {
     sudo apt-get update -qq
@@ -33,7 +35,6 @@ link_configs() {
 }
 
 setup_shell() {
-    SH_NAME=$(basename "${SHELL:-/bin/zsh}")
     if [ -f "${HOME}/.dotfiles/.${SH_NAME}rc" ]; then
         ln -sf "${HOME}/.dotfiles/aliases" "${HOME}/.${SH_NAME}_aliases"
         ln -sf "${HOME}/.dotfiles/envs" "${HOME}/.${SH_NAME}_envs"
@@ -45,6 +46,6 @@ setup_shell() {
 sudo chown -R "$(whoami):$(whoami)" ./
 install_deps
 install_omz
-install_nvim
+# install_nvim
 link_configs
 setup_shell
